@@ -1,4 +1,6 @@
 import csv
+import json
+import random
 
 from urllib.parse import urlencode
 
@@ -12,6 +14,9 @@ class Business:
 
     def __init__(self, data_dict):
         self.data_dict = data_dict
+
+    def __eq__(self, other):
+        return self.name.lower() == other.name.lower()
 
     @property
     def city(self):
@@ -49,15 +54,34 @@ def main(driver):
             for row in reader:
                 _all.append(Business(row))
 
+    # get past businesses
+    all_past = []
+    past_file = Path(DATA_DIR, "past_businesses.json")
+    if past_file.exists():
+        with open(past_file) as open_file:
+            for b_data in json.load(open_file):
+                all_past.append(Business(b_data))
+
     # loop over each business
     another_business = True # need a way to stop the loop
     while another_business:
-        business = _all.pop()
-        driver.get(business.google_search_url())
+        business = _all.pop(random.randint(0, len(_all)))
+        if not business in all_past:
+            driver.get(business.google_search_url())
+            all_past.append(business)
 
-        if "n" == input("Next business (y/n)? ").lower():
-            driver.close()
-            another_business = False
+            if "n" == input("Next business (y/n)? ").lower():
+                driver.close()
+                another_business = False
+
+    # convert Business instances back to dicts
+    b_dicts = []
+    for business in all_past:
+        b_dicts.append(business.data_dict)
+
+    # store them all
+    with open(past_file, "w") as open_file:
+        json.dump(b_dicts, open_file, indent=2)
 
 
 if __name__ == "__main__":
