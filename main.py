@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 from selenium import webdriver
 from unipath import Path
 
+from actions import Continue, CopyTemplateAction
 from settings import DATA_DIR
 
 
@@ -68,6 +69,31 @@ def main(driver):
         business = _all.pop(random.randint(0, len(_all)))
         if not business in all_past:
             driver.get(business.google_search_url())
+
+            # display actions
+            actions = [
+                Continue(),
+                CopyTemplateAction("name.txt"), # full name
+                CopyTemplateAction("first_name.txt"),
+                CopyTemplateAction("last_name.txt"),
+                CopyTemplateAction("phone_number.txt"),
+                CopyTemplateAction("email.txt"),
+                CopyTemplateAction("message.txt"),
+            ]
+
+            another_action = True
+            while another_action:
+                print("Choose from the following actions:\n")
+                for i, action in enumerate(actions):
+                    print(f"{i} {action.display()}")
+                print("")
+
+                try:
+                    chosen_action = int(input("Enter selection: "))
+                    another_action = actions[chosen_action].run()
+                except (ValueError, IndexError):
+                    print("\nNot a valid option, try again.\n")
+
             all_past.append(business)
 
             if "n" == input("Next business (y/n)? ").lower():
