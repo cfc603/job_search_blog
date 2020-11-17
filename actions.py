@@ -39,18 +39,32 @@ class Continue(Action):
 
 class CopyTemplateAction(Action):
 
-    def __init__(self, file_name, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.file_name = file_name
+    file_name = ""
 
     @property
     def name(self):
         return f"{self.__class__.__name__}: {self.file_name}"
 
     def display(self):
-        return f"Copy {self.file_name} template to clipboard."
+        return f"Copy template to clipboard."
 
     def run(self):
-        with open(Path(DATA_DIR, "templates", self.file_name)) as open_file:
-            copy(open_file.read())
+        print("\nChoose from the following templates")
+
+        selected = False
+        templates = Path(DATA_DIR, "templates").listdir()
+        while not selected:
+            for i, template in enumerate(templates):
+                print(f"{i} {template.name}")
+            print("")
+
+            try:
+                template = templates[int(input("Enter selection: "))]
+                with open(template) as open_file:
+                    copy(open_file.read())
+                selected = True
+                self.file_name = template.name
+            except (ValueError, IndexError):
+                print("\nNot a valid option, try again.\n")
+
         return super().run()

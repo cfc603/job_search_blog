@@ -96,12 +96,7 @@ def main(driver, session):
             # display actions
             actions = [
                 Continue(session),
-                CopyTemplateAction("name.txt", session), # full name
-                CopyTemplateAction("first_name.txt", session),
-                CopyTemplateAction("last_name.txt", session),
-                CopyTemplateAction("phone_number.txt", session),
-                CopyTemplateAction("email.txt", session),
-                CopyTemplateAction("message.txt", session),
+                CopyTemplateAction(session),
             ]
 
             another_action = True
