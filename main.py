@@ -2,6 +2,7 @@ import csv
 import json
 import random
 
+from datetime import datetime
 from urllib.parse import urlencode
 
 from selenium import webdriver
@@ -43,7 +44,28 @@ class Business:
         return False
 
 
-def main(driver):
+def store_session(session):
+    session_cache = Path(DATA_DIR, "session_cache.json")
+
+    # log stop session
+    session["stop"] = str(datetime.now())
+
+    # get existing sessions
+    if session_cache.exists():
+        with open(session_cache) as open_file:
+            sessions = json.load(open_file)
+    else:
+        sessions = []
+
+    # add new session
+    sessions.append(session)
+
+    # store all sessions
+    with open(session_cache, "w") as open_file:
+        json.dump(sessions, open_file, indent=4)
+
+
+def main(driver, session):
     web_address_count = 0
     _all = []
     # iterate over each file download in project/data/business_files
@@ -68,17 +90,18 @@ def main(driver):
     while another_business:
         business = _all.pop(random.randint(0, len(_all)))
         if not business in all_past:
+            session["total"] += 1
             driver.get(business.google_search_url())
 
             # display actions
             actions = [
-                Continue(),
-                CopyTemplateAction("name.txt"), # full name
-                CopyTemplateAction("first_name.txt"),
-                CopyTemplateAction("last_name.txt"),
-                CopyTemplateAction("phone_number.txt"),
-                CopyTemplateAction("email.txt"),
-                CopyTemplateAction("message.txt"),
+                Continue(session),
+                CopyTemplateAction("name.txt", session), # full name
+                CopyTemplateAction("first_name.txt", session),
+                CopyTemplateAction("last_name.txt", session),
+                CopyTemplateAction("phone_number.txt", session),
+                CopyTemplateAction("email.txt", session),
+                CopyTemplateAction("message.txt", session),
             ]
 
             another_action = True
@@ -90,7 +113,7 @@ def main(driver):
 
                 try:
                     chosen_action = int(input("Enter selection: "))
-                    another_action = actions[chosen_action].run()
+                    session, another_action = actions[chosen_action].run()
                 except (ValueError, IndexError):
                     print("\nNot a valid option, try again.\n")
 
@@ -109,14 +132,24 @@ def main(driver):
     with open(past_file, "w") as open_file:
         json.dump(b_dicts, open_file, indent=2)
 
+    return session
+
 
 if __name__ == "__main__":
     # open chrome
     driver = webdriver.Chrome()
     driver.maximize_window()
 
+    # create a new session
+    session = {
+        "start": str(datetime.now()),
+        "total": 0,
+        "actions": {},
+    }
+
     try:
-        main(driver)
+        session = main(driver, session)
+        store_session(session )
     except:
         driver.close()
         raise
