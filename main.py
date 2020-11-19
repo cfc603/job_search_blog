@@ -1,4 +1,6 @@
+import base64
 import csv
+import hashlib
 import json
 import random
 
@@ -14,6 +16,8 @@ from settings import DATA_DIR
 
 class Business:
 
+    path = Path(DATA_DIR, "business_files/past")
+
     def __init__(self, data_dict):
         self.data_dict = data_dict
 
@@ -25,12 +29,22 @@ class Business:
         return self.data_dict["City"]
 
     @property
+    def file_name(self):
+        # borrowed from
+        # https://github.com/pypa/pipenv/blob/master/pipenv/project.py#L409
+        _hash = hashlib.sha256(self.name.encode()).digest()[:6]
+        return base64.urlsafe_b64encode(_hash).decode()
+
+    @property
     def name(self):
         return self.data_dict["Company Name"]
 
     @property
     def web_address(self):
         return self.data_dict["Website"]
+
+    def exists(self):
+        return Path(self.path, self.file_name).exists()
 
     def google_search_url(self):
         # use urlencode to properly format the query
@@ -42,6 +56,10 @@ class Business:
         if self.web_address:
             return True
         return False
+
+    def save(self):
+        with open(Path(self.path, self.file_name), "w") as open_file:
+            json.dump(self.data_dict, open_file, indent=4)
 
 
 def store_session(session):
@@ -77,19 +95,11 @@ def main(driver, session):
             for row in reader:
                 _all.append(Business(row))
 
-    # get past businesses
-    all_past = []
-    past_file = Path(DATA_DIR, "past_businesses.json")
-    if past_file.exists():
-        with open(past_file) as open_file:
-            for b_data in json.load(open_file):
-                all_past.append(Business(b_data))
-
     # loop over each business
     another_business = True # need a way to stop the loop
     while another_business:
         business = _all.pop(random.randint(0, len(_all)))
-        if not business in all_past:
+        if not business.exists():
             session["total"] += 1
             driver.get(business.google_search_url())
 
@@ -112,7 +122,7 @@ def main(driver, session):
                 except (ValueError, IndexError):
                     print("\nNot a valid option, try again.\n")
 
-            all_past.append(business)
+            business.save()
 
             if "n" == input("Next business (y/n)? ").lower():
                 driver.close()
