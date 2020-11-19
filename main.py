@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 from selenium import webdriver
 from unipath import Path
 
-from actions import Continue, CopyTemplateAction
+from actions import AddOutcome, Continue, CopyTemplateAction
 from settings import DATA_DIR
 
 
@@ -52,6 +52,9 @@ class Business:
         query = urlencode({"q": f"{self.name.lower()} {self.city.lower()}"})
         return f"https://www.google.com/search?{query}"
 
+    def has_outcome(self):
+        return "outcome" in self.data_dict
+
     def has_web_address(self):
         if self.web_address:
             return True
@@ -61,6 +64,11 @@ class Business:
         with open(Path(self.path, self.file_name), "w") as open_file:
             json.dump(self.data_dict, open_file, indent=4)
 
+    def set_outcome(self, outcome):
+        self.data_dict["outcome"] = {
+            "desc": outcome,
+            "time": str(datetime.now()),
+        }
 
 def store_session(session):
     session_cache = Path(DATA_DIR, "session_cache.json")
@@ -106,6 +114,7 @@ def main(driver, session):
             # display actions
             actions = [
                 Continue(session),
+                AddOutcome(business, session),
                 CopyTemplateAction(session),
             ]
 
@@ -122,7 +131,8 @@ def main(driver, session):
                 except (ValueError, IndexError):
                     print("\nNot a valid option, try again.\n")
 
-            business.save()
+            if business.has_outcome():
+                business.save()
 
             if "n" == input("Next business (y/n)? ").lower():
                 driver.close()
@@ -141,6 +151,7 @@ if __name__ == "__main__":
         "start": str(datetime.now()),
         "total": 0,
         "actions": {},
+        "outcomes": {},
     }
 
     try:
