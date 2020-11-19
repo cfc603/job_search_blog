@@ -128,15 +128,6 @@ def main(driver, session):
                 driver.close()
                 another_business = False
 
-    # convert Business instances back to dicts
-    b_dicts = []
-    for business in all_past:
-        b_dicts.append(business.data_dict)
-
-    # store them all
-    with open(past_file, "w") as open_file:
-        json.dump(b_dicts, open_file, indent=2)
-
     return session
 
 
