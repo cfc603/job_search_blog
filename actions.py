@@ -1,17 +1,20 @@
 import json
+import requests
+import time
 
 from pyperclip import copy
 from unipath import Path
 
-from settings import DATA_DIR
+from settings import BASE_URL, DATA_DIR, API_KEY
 
 
 class Action:
 
     _continue = True
 
-    def __init__(self, session):
-        self.session = session
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     @classmethod
     def display(cls):
@@ -38,10 +41,6 @@ class AddOutcome(Action):
     _continue = False
     desc = "Set outcome."
     outcomes_cache = Path(DATA_DIR, "outcomes_cache.json")
-
-    def __init__(self, business, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.business = business
 
     def get_outcomes(self):
         with open(self.outcomes_cache) as open_file:
@@ -90,6 +89,41 @@ class Continue(Action):
     desc = "Next?"
 
 
+class CopyCustomMessage(Action):
+
+    desc = "Copy custom message."
+
+    def run(self):
+        headers = {"Authorization": f"token {API_KEY}"}
+        response = requests.get(BASE_URL + "/campaigns/", headers=headers)
+        campaigns = response.json()
+
+        # show campaign options
+        complete = False
+        while not complete:
+            print("\nChoose from the following campaigns:\n")
+            for i, campaign in enumerate(campaigns):
+                print(f"{i} {campaign['name']}")
+            print("")
+
+            # get campaign selection
+            try:
+                choosen = input("Enter selection: ")
+                choosen = campaigns[int(choosen)]
+                complete = True
+            except ValueError:
+                print("\nNot a vaild selection. Try again.")
+
+        # get campaign template
+        response = requests.post(
+            BASE_URL + "/businesses/create/",
+            headers=headers,
+            data={"name": self.business.name, "campaign": choosen["pk"]}
+        )
+        copy(response.json()["template"])
+        return super().run()
+
+
 class CopyTemplateAction(Action):
 
     file_name = ""
@@ -119,5 +153,71 @@ class CopyTemplateAction(Action):
                 self.file_name = template.name
             except (ValueError, IndexError):
                 print("\nNot a valid option, try again.\n")
+
+        return super().run()
+
+
+class MoreInfo(Action):
+
+    desc = "Display business info."
+
+    def run(self):
+        print("\n" + self.business.name)
+        print(self.business.address + "\n")
+        return super().run()
+
+
+class Search(Action):
+
+    desc = "Search for business"
+
+    def run(self):
+        search_options = [
+            ["DuckDuckGo", "https://duckduckgo.com/?"],
+            ["Google", "https://www.google.com/search?"]
+        ]
+
+        another = True
+        while another:
+            print("Choose from the following search options:\n")
+            for i, option in enumerate(search_options):
+                print(f"{i} {option[0]}")
+            print("")
+
+            try:
+                choosen = int(input("Enter selection: "))
+                url = search_options[choosen][1]
+                url += self.business.search_params()
+                self.driver.get(url)
+                another = False
+            except (ValueError, IndexError):
+                print("\nNot a valid search option, try again.\n")
+        return super().run()
+
+
+class WebAddress(Action):
+
+    desc = "Add current web address to business."
+
+    def run(self):
+        self.business.set_web_address(self.driver.current_url)
+
+        cache_file = Path(DATA_DIR, "web_addresses.json")
+        with open(cache_file) as open_file:
+            web_addresses = json.load(open_file)
+
+        if self.business.web_address in web_addresses:
+            # need a prominent message to ensure not
+            # contacted again
+            for i in range(10):
+                print()
+            print("\nPreviously visited web_address!\n")
+            for i in range(10):
+                print()
+            time.sleep(1)
+        else:
+            web_addresses.append(self.business.web_address)
+            with open(cache_file, "w") as open_file:
+                json.dump(web_addresses, open_file, indent=4)
 
         return super().run()
