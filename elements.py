@@ -24,7 +24,10 @@ class Form(Element):
 
     def display(self):
         self.we.location_once_scrolled_into_view
-        self.get_visible_inputs()[0].click()
+        try:
+            self.get_visible_inputs()[0].click()
+        except ElementClickInterceptedException:
+            print("\nUnable to click.\n")
 
     def get_inputs(self):
         if not hasattr(self, "_inputs"):
