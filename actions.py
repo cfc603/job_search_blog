@@ -165,6 +165,11 @@ class FindForm(Action):
     def run(self):
         page = Page(self.driver)
         if page.has_form():
+
+            if page.has_captcha():
+                print("\nPage has Google Captcha")
+                time.sleep(1)
+
             print("\nSelect one of the following forms:")
 
             count = 1
@@ -238,6 +243,8 @@ class FindLinks(Action):
                         print("\nNot a valid option, try again.\n")
         else:
             print("\nNo link on page\n")
+            if page.has_captcha():
+                print("\nPage has Google Captcha")
 
         return super().run()
 

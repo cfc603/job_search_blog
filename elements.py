@@ -1,6 +1,10 @@
 from urllib.parse import urlparse
 
-from selenium.common.exceptions import ElementClickInterceptedException
+from selenium.common.exceptions import (
+    ElementClickInterceptedException,
+    ElementNotInteractableException,
+    NoSuchElementException
+)
 
 
 class Element:
@@ -125,6 +129,15 @@ class Page:
                 if link.is_internal():
                     self._internal_links.append(link)
         return self._internal_links
+
+    def has_captcha(self):
+        try:
+            self.d.find_element_by_xpath(
+                "//script[contains(@src, 'google.com/recaptcha')]"
+            )
+            return True
+        except NoSuchElementException:
+            return False
 
     def has_form(self):
         if self.get_forms():
