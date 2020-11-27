@@ -11,7 +11,8 @@ from unipath import Path
 
 from actions import (
     AddOutcome, Continue, CopyCustomMessage,
-    CopyTemplateAction, MoreInfo, Search, WebAddress
+    CopyTemplateAction, FindForm, MoreInfo,
+    Search, WebAddress
 )
 from games import ContactFormGame
 from sessions import get_new_session, store_session
@@ -136,6 +137,7 @@ def main(driver, session):
                 CopyTemplateAction(**kwargs),
                 CopyCustomMessage(**kwargs),
                 Search(**kwargs),
+                FindForm(**kwargs),
             ]
 
             another_action = True

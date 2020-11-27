@@ -5,6 +5,7 @@ import time
 from pyperclip import copy
 from unipath import Path
 
+from elements import Page
 from settings import BASE_URL, DATA_DIR, API_KEY
 
 
@@ -153,6 +154,53 @@ class CopyTemplateAction(Action):
                 self.file_name = template.name
             except (ValueError, IndexError):
                 print("\nNot a valid option, try again.\n")
+
+        return super().run()
+
+
+class FindForm(Action):
+
+    desc = "Find Form"
+
+    def run(self):
+        page = Page(self.driver)
+        if page.has_form():
+            print("\nSelect one of the following forms:")
+
+            count = 1
+            selected = False
+            while not selected:
+                forms = page.get_forms()
+                for i, form in enumerate(forms):
+                    if form.has_input():
+                        print(f"{i} Form ID {form.id}")
+                        for _input in form.get_visible_inputs():
+                            print("")
+                            print(f"  Name: {_input.name}")
+                            print(f"  Title: {_input.title}")
+                            print(f"  ID: {_input.id}")
+                        print("")
+                        count += 1
+                    else:
+                        forms.pop(i)
+                print(f"{count + 1} No Form")
+                print(f"{count + 2} Debug")
+                print("")
+
+                try:
+                    selection = int(input("Enter selection: "))
+                    form = forms[selection]
+                    form.display()
+                    selected = True
+                except (ValueError, IndexError):
+                    if selection == count + 1:
+                        selected = True
+                    elif selection == count + 2:
+                        import IPython; IPython.embed()
+                    else:
+                        print("\nNot a valid option, try again.\n")
+        else:
+            print("\nNo form on page\n")
 
         return super().run()
 
