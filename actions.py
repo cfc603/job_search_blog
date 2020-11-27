@@ -205,6 +205,43 @@ class FindForm(Action):
         return super().run()
 
 
+class FindLinks(Action):
+
+    desc = "Find Links"
+
+    def run(self):
+        page = Page(self.driver)
+        if page.has_link():
+            print("\nSelect one of the following links:")
+
+            selected = False
+            while not selected:
+                links = page.get_internal_links()
+                for i, link in enumerate(links):
+                    print(f"{i} link {link.name} @ {link.url.path}")
+
+                print(f"{i + 1} No link")
+                print(f"{i + 2} Debug")
+                print("")
+
+                try:
+                    selection = int(input("Enter selection: "))
+                    link = links[selection]
+                    link.follow()
+                    selected = True
+                except (ValueError, IndexError):
+                    if selection == i + 1:
+                        selected = True
+                    elif selection == i + 2:
+                        import IPython; IPython.embed()
+                    else:
+                        print("\nNot a valid option, try again.\n")
+        else:
+            print("\nNo link on page\n")
+
+        return super().run()
+
+
 class MoreInfo(Action):
 
     desc = "Display business info."
