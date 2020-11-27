@@ -88,6 +88,8 @@ class Link(Element):
             self.we.click()
         except ElementClickInterceptedException:
             print("\nUnable to follow.\n")
+        except ElementNotInteractableException:
+            print("\nUnable to follow.\n")
         except:
             import IPython; IPython.embed()
             raise
